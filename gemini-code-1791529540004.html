@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>聚餐外送分帳與運費平攤小算盤</title>
+  <style>
+    :root {
+      --primary-color: #8E9BAE;
+      --primary-hover: #758396;
+      --bg-color: #F4F6F9;
+      --card-bg: #FFFFFF;
+      --text-main: #333333;
+      --text-muted: #666666;
+      --border-color: #E2E8F0;
+      --accent-color: #5A738E;
+      --success-color: #4CAF50;
+      --danger-color: #E53935;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding: 20px 15px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 800px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    header h1 {
+      color: var(--accent-color);
+      font-size: 1.8rem;
+      margin-bottom: 8px;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .top-actions {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+      border: 1px solid var(--border-color);
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--accent-color);
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 600px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .input-group label {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    input[type="text"], input[type="number"] {
+      padding: 10px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus, input[type="number"]:focus {
+      border-color: var(--primary-color);
+    }
+
+    .summary-bar {
+      background-color: #EBF0F5;
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-around;
+      text-align: center;
+      margin-top: 15px;
+    }
+
+    .summary-item .num {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: var(--accent-color);
+      margin-top: 2px;
+    }
+
+    .summary-item .label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.1s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .btn-outline {
+      background-color: transparent;
+      border: 1px solid var(--primary-color);
+      color: var(--primary-color);
+    }
+
+    .btn-outline:hover {
+      background-color: #F0F4F8;
+    }
+
+    .btn-danger {
+      background-color: transparent;
+      color: var(--danger-color);
+      padding: 4px 8px;
+      font-size: 0.85rem;
+    }
+
+    .btn-danger:hover {
+      background-color: #FFEBEE;
+    }
+
+    .btn-block {
+      width: 100%;
+      padding: 12px;
+      font-size: 1.05rem;
+    }
+
+    .member-card {
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
+      background-color: #FAFCFF;
+    }
+
+    .member-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .member-name-input {
+      font-weight: bold;
+      width: 200px;
+    }
+
+    .item-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+
+    .item-row input[type="text"] {
+      flex: 2;
+    }
+
+    .item-row input[type="number"] {
+      flex: 1;
+    }
+
+    .member-total {
+      text-align: right;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+
+    .member-total span {
+      font-weight: bold;
+      color: var(--accent-color);
+    }
+
+    .result-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    .result-table th, .result-table td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .result-table th {
+      background-color: #F8FAFC;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .result-table td.amount {
+      font-weight: bold;
+      color: var(--accent-color);
+    }
+
+    .notice-box {
+      background-color: #FFF9E6;
+      border: 1px solid #FFE58F;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      color: #8C6B00;
+      margin-top: 15px;
+    }
+
+    .line-text-area {
+      width: 100%;
+      height: 120px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background-color: #F8FAFC;
+      font-size: 0.9rem;
+      resize: none;
+      margin-top: 10px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(51, 51, 51, 0.9);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      display: none;
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>🍱 聚餐外送分帳與運費平攤小算盤</h1>
+      <p>精準依餐點比例平攤運費與折扣，1 元尾數自動平攤，一鍵生成 LINE 催帳訊息！</p>
+    </header>
+
+    <div class="top-actions">
+      <button class="btn btn-outline" onclick="loadDemoData()">📋 載入測試範例</button>
+      <button class="btn btn-outline" onclick="resetAll()">🔄 清空重置</button>
+    </div>
+
+    <!-- 1. 訂單基本費用設定 -->
+    <div class="card">
+      <div class="card-title">1. 外送與折扣設定</div>
+      <div class="grid-2">
+        <div class="input-group">
+          <label for="deliveryFee">🛵 外送費 / 服務費 ($)</label>
+          <input type="number" id="deliveryFee" value="0" min="0" oninput="calculate()">
+        </div>
+        <div class="input-group">
+          <label for="discount">🎟️ 總折扣 / 優惠券 ($)</label>
+          <input type="number" id="discount" value="0" min="0" oninput="calculate()">
+        </div>
+      </div>
+
+      <div class="summary-bar">
+        <div class="summary-item">
+          <div class="label">餐點小計</div>
+          <div class="num" id="sumFood">$0</div>
+        </div>
+        <div class="summary-item">
+          <div class="label">運費/折扣淨額</div>
+          <div class="num" id="sumNetFee">$0</div>
+        </div>
+        <div class="summary-item">
+          <div class="label">全單應付總額</div>
+          <div class="num" id="sumTotal">$0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. 成員與餐點明細 -->
+    <div class="card">
+      <div class="card-title">
+        <span>2. 各成員點餐明細</span>
+        <button class="btn btn-primary" onclick="addMember()">+ 新增成員</button>
+      </div>
+
+      <div id="membersContainer">
+        <!-- 成員卡片動態插入處 -->
+      </div>
+    </div>
+
+    <!-- 3. 計算結果 -->
+    <div class="card">
+      <div class="card-title">3. 分帳結果明細</div>
+      <button class="btn btn-primary btn-block" onclick="calculate()">🧮 開始計算分帳金額</button>
+
+      <div id="resultSection" style="display: none;">
+        <table class="result-table">
+          <thead>
+            <tr>
+              <th>成員</th>
+              <th>餐點原價</th>
+              <th>運費/折扣分擔</th>
+              <th>最終應付金額</th>
+            </tr>
+          </thead>
+          <tbody id="resultTableBody">
+            <!-- 結果列表動態插入 -->
+          </tbody>
+        </table>
+
+        <div class="notice-box" id="adjustmentNotice">
+          💡 提示：金額採四捨五入取整數。若有 1 元尾數差額，已自動平攤至餐點金額最高的成員。
+        </div>
+
+        <div style="margin-top: 20px;">
+          <label style="font-weight: 600; font-size: 0.95rem; color: var(--accent-color);">💬 複製 LINE 催帳訊息：</label>
+          <textarea class="line-text-area" id="lineTextArea" readonly></textarea>
+          <button class="btn btn-primary btn-block" style="margin-top: 10px;" onclick="copyLineText()">📋 一鍵複製 LINE 催帳文字</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">複製成功！已複製到剪貼簿</div>
+
+  <script>
+    let memberCount = 0;
+
+    // 初始化：預設建立一位成員
+    window.onload = function() {
+      addMember();
+    };
+
+    // 新增成員
+    function addMember(name = '', items = []) {
+      memberCount++;
+      const id = memberCount;
+      const container = document.getElementById('membersContainer');
+
+      const card = document.createElement('div');
+      card.className = 'member-card';
+      card.id = `member-${id}`;
+
+      card.innerHTML = `
+        <div class="member-header">
+          <input type="text" class="member-name-input" placeholder="成員姓名 (例: 小明)" value="${name}" oninput="calculate()">
+          <button class="btn btn-danger" onclick="removeMember(${id})">刪除成員</button>
+        </div>
+        <div id="items-container-${id}"></div>
+        <button class="btn btn-outline" style="font-size: 0.85rem; padding: 4px 10px;" onclick="addItem(${id})">+ 新增餐點細項</button>
+        <div class="member-total">個人餐點小计: $<span id="member-subtotal-${id}">0</span></div>
+      `;
+
+      container.appendChild(card);
+
+      if (items.length > 0) {
+        items.forEach(item => addItem(id, item.name, item.price));
+      } else {
+        addItem(id);
+      }
+      calculate();
+    }
+
+    // 刪除成員
+    function removeMember(id) {
+      const card = document.getElementById(`member-${id}`);
+      if (card) {
+        card.remove();
+        calculate();
+      }
+    }
+
+    // 新增餐點細項
+    function addItem(memberId, name = '', price = '') {
+      const container = document.getElementById(`items-container-${memberId}`);
+      const itemRow = document.createElement('div');
+      itemRow.className = 'item-row';
+
+      itemRow.innerHTML = `
+        <input type="text" class="item-name" placeholder="品項名稱 (例: 排骨飯)" value="${name}">
+        <input type="number" class="item-price" placeholder="金額" value="${price}" min="0" oninput="calculate()">
+        <button class="btn btn-danger" onclick="this.parentElement.remove(); calculate();">✕</button>
+      `;
+
+      container.appendChild(itemRow);
+      calculate();
+    }
+
+    // 自動計算邏輯
+    function calculate() {
+      const deliveryFee = parseFloat(document.getElementById('deliveryFee').value) || 0;
+      const discount = parseFloat(document.getElementById('discount').value) || 0;
+      const netFee = deliveryFee - discount; // 運費與折扣抵扣後的淨額
+
+      let membersData = [];
+      let totalFoodSum = 0;
+
+      // 遍歷所有成員卡片
+      const memberCards = document.querySelectorAll('.member-card');
+      memberCards.forEach(card => {
+        const id = card.id.split('-')[1];
+        const nameInput = card.querySelector('.member-name-input').value.trim();
+        const name = nameInput || `成員 ${id}`;
+
+        let memberFoodTotal = 0;
+        const priceInputs = card.querySelectorAll('.item-price');
+        priceInputs.forEach(input => {
+          memberFoodTotal += parseFloat(input.value) || 0;
+        });
+
+        document.getElementById(`member-subtotal-${id}`).innerText = memberFoodTotal;
+
+        membersData.push({
+          id: id,
+          name: name,
+          foodTotal: memberFoodTotal,
+          sharedFee: 0,
+          finalPay: 0
+        });
+
+        totalFoodSum += memberFoodTotal;
+      });
+
+      // 更新頂部總覽卡片
+      const totalOrderPay = totalFoodSum + netFee;
+      document.getElementById('sumFood').innerText = `$${totalFoodSum}`;
+      document.getElementById('sumNetFee').innerText = `${netFee >= 0 ? '+' : ''}$${netFee}`;
+      document.getElementById('sumTotal').innerText = `$${totalOrderPay}`;
+
+      if (membersData.length === 0 || totalFoodSum === 0) {
+        document.getElementById('resultSection').style.display = 'none';
+        return;
+      }
+
+      document.getElementById('resultSection').style.display = 'block';
+
+      // 按比例平攤計算
+      let rawTotalCalculated = 0;
+      membersData.forEach(m => {
+        const ratio = m.foodTotal / totalFoodSum;
+        m.sharedFee = netFee * ratio;
+        m.finalPay = Math.round(m.foodTotal + m.sharedFee); // 四捨五入
+        rawTotalCalculated += m.finalPay;
+      });
+
+      // 1 元尾數微調機制：處理四捨五入總差額
+      const diff = totalOrderPay - rawTotalCalculated;
+      let adjustedMemberName = "";
+      if (diff !== 0 && membersData.length > 0) {
+        // 找到餐點金額最大的成員進行微調
+        let maxMember = membersData.reduce((max, m) => m.foodTotal > max.foodTotal ? m : max, membersData[0]);
+        maxMember.finalPay += diff;
+        adjustedMemberName = maxMember.name;
+      }
+
+      // 渲染表格
+      const tbody = document.getElementById('resultTableBody');
+      tbody.innerHTML = '';
+      let lineTextLines = [`🍱 外送分帳明細 (全單 $${totalOrderPay})`];
+
+      membersData.forEach(m => {
+        const netDiff = m.finalPay - m.foodTotal;
+        const diffText = netDiff >= 0 ? `+${netDiff}` : `${netDiff}`;
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${m.name}</strong></td>
+          <td>$${m.foodTotal}</td>
+          <td style="color: ${netDiff >= 0 ? '#E53935' : '#4CAF50'};">$${diffText}</td>
+          <td class="amount">$${m.finalPay}</td>
+        `;
+        tbody.appendChild(tr);
+
+        lineTextLines.push(`・${m.name}：$${m.finalPay} (餐點 $${m.foodTotal} ${diffText})`);
+      });
+
+      lineTextLines.push(`\n👉 感謝大家，再麻煩轉帳給我囉！`);
+      document.getElementById('lineTextArea').value = lineTextLines.join('\n');
+
+      // 顯示/隱藏微調提示
+      const noticeBox = document.getElementById('adjustmentNotice');
+      if (diff !== 0) {
+        noticeBox.style.display = 'block';
+        noticeBox.innerText = `💡 提示：採四捨五入計算，因尾數相差 $${diff} 元，已自動將差額微調至餐點金額最高的「${adjustedMemberName}」。`;
+      } else {
+        noticeBox.style.display = 'block';
+        noticeBox.innerText = `💡 提示：金額採四捨五入精準平攤，全單總額與各人實付完全吻合！`;
+      }
+    }
+
+    // 載入 Demo 範例資料
+    function loadDemoData() {
+      document.getElementById('membersContainer').innerHTML = '';
+      memberCount = 0;
+
+      document.getElementById('deliveryFee').value = 60;
+      document.getElementById('discount').value = 80;
+
+      addMember('小明', [
+        { name: '排骨便當', price: 120 },
+        { name: '珍珠奶茶', price: 60 }
+      ]);
+
+      addMember('小華', [
+        { name: '雞腿便當', price: 130 }
+      ]);
+
+      addMember('阿美', [
+        { name: '牛肉麵', price: 180 },
+        { name: '燙青菜', price: 40 }
+      ]);
+    }
+
+    // 重置清空
+    function resetAll() {
+      document.getElementById('membersContainer').innerHTML = '';
+      document.getElementById('deliveryFee').value = 0;
+      document.getElementById('discount').value = 0;
+      memberCount = 0;
+      addMember();
+    }
+
+    // 一鍵複製 LINE 文字
+    function copyLineText() {
+      const textArea = document.getElementById('lineTextArea');
+      textArea.select();
+      document.execCommand('copy');
+
+      const toast = document.getElementById('toast');
+      toast.style.display = 'block';
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 2000);
+    }
+  </script>
+</body>
+</html>
